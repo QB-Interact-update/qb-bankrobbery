@@ -194,6 +194,18 @@ CreateThread(function()
         end
     end)
     for k in pairs(Config.BigBanks["pacific"]["lockers"]) do
+        local options = {
+            {
+                action = function()
+                    openLocker("pacific", k)
+                end,
+                canInteract = function()
+                    return not IsDrilling and Config.BigBanks["pacific"]["isOpened"] and not Config.BigBanks["pacific"]["lockers"][k]["isBusy"] and not Config.BigBanks["pacific"]["lockers"][k]["isOpened"]
+                end,
+                icon = 'fa-solid fa-vault',
+                label = Lang:t("general.break_safe_open_option_target"),
+            },      
+        }
         if Config.UseTarget then
             exports['qb-target']:AddBoxZone('pacific_coords_locker_'..k, Config.BigBanks["pacific"]["lockers"][k]["coords"], 1.0, 1.0, {
                 name = 'pacific_coords_locker_'..k,
@@ -202,61 +214,19 @@ CreateThread(function()
                 maxZ = Config.BigBanks["pacific"]["lockers"][k]["coords"].z + 1,
                 debugPoly = false
             }, {
-                options = {
-                    {
-                        action = function()
-                            openLocker("pacific", k)
-                        end,
-                        canInteract = function()
-                            return not IsDrilling and Config.BigBanks["pacific"]["isOpened"] and not Config.BigBanks["pacific"]["lockers"][k]["isBusy"] and not Config.BigBanks["pacific"]["lockers"][k]["isOpened"]
-                        end,
-                        icon = 'fa-solid fa-vault',
-                        label = Lang:t("general.break_safe_open_option_target"),
-                    },
-                },
+                options = options,
                 distance = 1.5
             })
         else
-            local lockerZone = BoxZone:Create(Config.BigBanks["pacific"]["lockers"][k]["coords"], 1.0, 1.0, {
+            exports['qb-interact']:addInteractZone({
                 name = 'pacific_coords_locker_'..k,
-                heading = Config.BigBanks["pacific"]["heading"].closed,
-                minZ = Config.BigBanks["pacific"]["lockers"][k]["coords"].z - 1,
-                maxZ = Config.BigBanks["pacific"]["lockers"][k]["coords"].z + 1,
-                debugPoly = false
+                coords = Config.BigBanks["pacific"]["lockers"][k]["coords"],
+                length = 2.0, 
+                width = 2.0,
+                debugPoly = false,
+                options = options,
+                height = 3.0
             })
-            lockerZone:onPlayerInOut(function(inside)
-                if inside and not IsDrilling and Config.BigBanks["pacific"]["isOpened"] and not Config.BigBanks["pacific"]["lockers"][k]["isBusy"] and not Config.BigBanks["pacific"]["lockers"][k]["isOpened"] then
-                    exports['qb-core']:DrawText(Lang:t("general.break_safe_open_option_drawtext"), 'right')
-                    currentLocker = k
-                else
-                    if currentLocker == k then
-                        currentLocker = 0
-                        exports['qb-core']:HideText()
-                    end
-                end
-            end)
-        end
-    end
-    if not Config.UseTarget then
-        while true do
-            local sleep = 1000
-            if isLoggedIn then
-                if currentLocker ~= 0 and not IsDrilling and Config.BigBanks["pacific"]["isOpened"] and not Config.BigBanks["pacific"]["lockers"][currentLocker]["isBusy"] and not Config.BigBanks["pacific"]["lockers"][currentLocker]["isOpened"] then
-                    sleep = 0
-                    if IsControlJustPressed(0, 38) then
-                        exports['qb-core']:KeyPressed()
-                        Wait(500)
-                        exports['qb-core']:HideText()
-                        if CurrentCops >= Config.MinimumPacificPolice then
-                            openLocker("pacific", currentLocker)
-                        else
-                            QBCore.Functions.Notify(Lang:t("error.minimum_police_required", {police = Config.MinimumPacificPolice}), "error")
-                        end
-                        sleep = 1000
-                    end
-                end
-            end
-            Wait(sleep)
         end
     end
 end)

@@ -450,6 +450,18 @@ CreateThread(function()
             end
         end)
         for k in pairs(Config.SmallBanks[i]["lockers"]) do
+            local options = {
+              {
+                  action = function()
+                      openLocker(closestBank, k)
+                  end,
+                  canInteract = function()
+                      return closestBank ~= 0 and not IsDrilling and Config.SmallBanks[i]["isOpened"] and not Config.SmallBanks[i]["lockers"][k]["isOpened"] and not Config.SmallBanks[i]["lockers"][k]["isBusy"]
+                  end,
+                  icon = 'fa-solid fa-vault',
+                  label = Lang:t("general.break_safe_open_option_target"),
+              }
+            }
             if Config.UseTarget then
                 exports['qb-target']:AddBoxZone('fleeca_'..i..'_coords_locker_'..k, Config.SmallBanks[i]["lockers"][k]["coords"], 1.0, 1.0, {
                     name = 'fleeca_'..i..'_coords_locker_'..k,
@@ -458,64 +470,20 @@ CreateThread(function()
                     maxZ = Config.SmallBanks[i]["lockers"][k]["coords"].z + 1,
                     debugPoly = false
                 }, {
-                    options = {
-                        {
-                            action = function()
-                                openLocker(closestBank, k)
-                            end,
-                            canInteract = function()
-                                return closestBank ~= 0 and not IsDrilling and Config.SmallBanks[i]["isOpened"] and not Config.SmallBanks[i]["lockers"][k]["isOpened"] and not Config.SmallBanks[i]["lockers"][k]["isBusy"]
-                            end,
-                            icon = 'fa-solid fa-vault',
-                            label = Lang:t("general.break_safe_open_option_target"),
-                        },
-                    },
+                    options = options,
                     distance = 1.5
                 })
             else
-                local lockerZone = BoxZone:Create(Config.SmallBanks[i]["lockers"][k]["coords"], 1.0, 1.0, {
+                exports['qb-interact']:addInteractZone({
                     name = 'fleeca_'..i..'_coords_locker_'..k,
-                    heading = Config.SmallBanks[i]["heading"].closed,
-                    minZ = Config.SmallBanks[i]["lockers"][k]["coords"].z - 1,
-                    maxZ = Config.SmallBanks[i]["lockers"][k]["coords"].z + 1,
-                    debugPoly = false
+                    coords = Config.SmallBanks[i]["lockers"][k]["coords"],
+                    length = 2.0,
+                    width = 2.0,
+                    debugPoly = false,
+                    height = 3.0,
+                    options = options,
                 })
-                lockerZone:onPlayerInOut(function(inside)
-                    if inside and closestBank ~= 0 and not IsDrilling and Config.SmallBanks[i]["isOpened"] and not Config.SmallBanks[i]["lockers"][k]["isOpened"] and not Config.SmallBanks[i]["lockers"][k]["isBusy"] then
-                        exports['qb-core']:DrawText(Lang:t("general.break_safe_open_option_drawtext"), 'right')
-                        currentLocker = k
-                    else
-                        if currentLocker == k then
-                            currentLocker = 0
-                            exports['qb-core']:HideText()
-                        end
-                    end
-                end)
             end
-        end
-    end
-    if not Config.UseTarget then
-        while true do
-            local sleep = 1000
-            if isLoggedIn then
-                for i = 1, #Config.SmallBanks do
-                    if currentLocker ~= 0 and not IsDrilling and Config.SmallBanks[i]["isOpened"] and not Config.SmallBanks[i]["lockers"][currentLocker]["isOpened"] and not Config.SmallBanks[i]["lockers"][currentLocker]["isBusy"] then
-                        sleep = 0
-                        if IsControlJustPressed(0, 38) then
-                            exports['qb-core']:KeyPressed()
-                            Wait(500)
-                            exports['qb-core']:HideText()
-                            if CurrentCops >= Config.MinimumFleecaPolice then
-                                openLocker(closestBank, currentLocker)
-                            else
-                                QBCore.Functions.Notify(Lang:t("error.minimum_police_required", {police = Config.MinimumFleecaPolice}), "error")
-                            end
-                            sleep = 1000
-                        end
-                    end
-                end
-            end
-            Wait(sleep)
         end
     end
 end)
